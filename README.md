@@ -18,7 +18,7 @@ This research is structured into two key components:
 
 ## **Code Repository**
 
-The entire codebase for this study is accessible in the main branch under the **`/Descriptive`** and **`/Predictive`** directories. Due to privacy considerations, the dataset used for this research cannot be shared.
+The entire codebase for this study is accessible in the main branch under the **`/scripts/descriptive`** and **`/scripts/predictive`** directories. Due to privacy considerations, the dataset used for this research cannot be shared.
 
 ## **Online Calculator**
 
