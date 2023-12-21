@@ -1,0 +1,37 @@
+﻿var,rank_1,rank_2,rank_3
+Diagnoses (n),36,36,35
+Oxycodone ,35,24,28
+Images (n),34,34,36
+Antineoplastic drugs (n),33,35,33
+Laboratory tests (n),32,33,34
+Nervous system drugs (n),31,21,26
+Age at first purchase,30,31,23
+Tramadol,29,23,13
+Doctor visits (n),28,28,32
+Musculoskeletal drugs (n),27,30,27
+PCI,26,27,29
+Total drugs (n),25,32,30
+BMI,24,29,25
+prof_primary,23,22,22
+SES_1,22,20,17
+diff_prof,21,18,24
+Malignancy diagnosis,20,25,31
+SES_3,19,19,19
+pain_TRUE,18,13,11
+SES_2,17,16,16
+SES_4,16,14,20
+district_north,15,26,15
+sector_arab_other,14,11,21
+district_dan_PT,13,5,7
+district_south,12,9,10
+gender_male,11,15,12
+sector_rel_mix,10,17,14
+district_jlm,9,10,4
+district_sharon_shomron,8,4,3
+district_haifa,7,12,5
+sector_beduouin,6,7,9
+generic_other,5,2,1
+psuchiatric_not_pci_TRUE,4,1,18
+district_tlv,1,3,2
+district_eilat,2,8,6
+sector_cherkess,3,6,8
