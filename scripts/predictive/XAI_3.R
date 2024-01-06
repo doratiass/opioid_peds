@@ -1,4 +1,4 @@
-# packages ####
+# packages --------------------------------------------------------------------
 library(tidyverse)
 library(gtsummary)
 library(shapviz)
@@ -15,8 +15,8 @@ load("models.RData")
 set.seed(45)
 cat("\f")
 
-# XGB_1 ####
-## SHAP values ####
+# XGB_1 ------------------------------------------------------------------------
+## SHAP values -----------------------------------------------------------------
 xgb_prep_1 <- xgb_rec_1 %>%
   prep(strings_as_factors = FALSE,
        log_changes = TRUE,
@@ -34,7 +34,7 @@ shap_imp_1 <- sv_importance(shap_1, kind = "both", show_numbers = TRUE, max_disp
 
 shap_imp_1
 
-## PDP ####
+## PDP -------------------------------------------------------------------------
 deps_1 <- shap_imp_1$data %>%
   mutate(feature = as.character(feature)) %>%
   distinct(feature) %>%
@@ -57,8 +57,8 @@ dep_plot_1 %>%
   facet_wrap(~feature, scales = "free") +
   theme_classic()
 
-# XGB_2 ####
-## SHAP values ####
+# XGB_2 ------------------------------------------------------------------------
+## SHAP values -----------------------------------------------------------------
 xgb_prep_2 <- xgb_rec_2 %>%
   prep(strings_as_factors = FALSE,
        log_changes = TRUE,
@@ -74,7 +74,7 @@ shap_2 <- shapviz(extract_fit_engine(final_xgb_fit_2), X_pred = xgb_shap_data_2)
 shap_imp_2 <- sv_importance(shap_2, kind = "both", show_numbers = TRUE, max_display = 36) +
   theme_classic()
 
-## PDP ####
+## PDP -------------------------------------------------------------------------
 deps_2 <- shap_imp_2$data %>%
   mutate(feature = as.character(feature)) %>%
   distinct(feature) %>%
@@ -97,8 +97,8 @@ dep_plot_2 %>%
   facet_wrap(~feature, scales = "free") +
   theme_classic()
 
-# XGB_3 ####
-## SHAP values ####
+# XGB_3 ------------------------------------------------------------------------
+## SHAP values -----------------------------------------------------------------
 xgb_prep_3 <- xgb_rec_3 %>%
   prep(strings_as_factors = FALSE,
        log_changes = TRUE,
@@ -114,7 +114,7 @@ shap_3 <- shapviz(extract_fit_engine(final_xgb_fit_3), X_pred = xgb_shap_data_3)
 shap_imp_3 <- sv_importance(shap_3, kind = "both", show_numbers = TRUE, max_display = 36) +
   theme_classic()
 
-## PDP ####
+## PDP -------------------------------------------------------------------------
 deps_3 <- shap_imp_3$data %>%
   mutate(feature = as.character(feature)) %>%
   distinct(feature) %>%

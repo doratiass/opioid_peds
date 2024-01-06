@@ -11,20 +11,23 @@ library(randomForest)
 library(janitor)
 
 source(file.path("funcs.R"), encoding = "utf8")
-load("op_data.RData")
 set.seed(45)
 cat("\f")
 
-# Cohort creation ####
+# Cohort creation -------------------------------------------------------------
 
-## important large files ####
-re_date <- read_csv("FIRST_OPIOID_POP_PURCHASE_updated.csv",show_col_types = FALSE) %>%
+## important data files -------------------------------------------------------
+load("op_data.RData")
+
+re_date <- read_csv("FIRST_OPIOID_POP_PURCHASE_updated.csv",
+                    show_col_types = FALSE) %>%
   clean_names()
 
 op_meds_tbl <- read_csv("med_list_new.csv", show_col_types = FALSE)
 membership_dates <- read_csv("cohort_entitlement_FIRST_OPIOID_POP_PURCHASE_updated_PatientID.csv",
                              show_col_types = FALSE) %>%
-  left_join(re_date %>% select(patient_id, RE_date = reference_event_date_dispensed), by = "patient_id") %>%
+  left_join(re_date %>% select(patient_id, RE_date = reference_event_date_dispensed), 
+            by = "patient_id") %>%
   mutate(days_from_start = difftime(RE_date, membership_start_date, units = "days"),
          days_from_end = difftime(RE_date, membership_end_date, units = "days")) %>%
   filter(days_from_start > 0,
@@ -36,7 +39,7 @@ membership_dates <- read_csv("cohort_entitlement_FIRST_OPIOID_POP_PURCHASE_updat
   mutate(days_from_start = difftime(RE_date, member_start, units = "days"),
          days_from_end = difftime(RE_date, member_end, units = "days"))
 
-## import opioid drugs purchases ####
+## import opioid drugs purchases -----------------------------------------------
 purch_full <- drugs %>%
   filter(RE_ATC5 %in% op_meds_tbl$atc) %>%
   select(-c(birth_date,RE_age)) %>%
@@ -49,7 +52,7 @@ purch_full <- drugs %>%
          time = as.numeric(floor(difftime(RE_date, start_date,unit = "days")/30))) %>%
   ungroup()
 
-### Correct MME ####
+### Correct MME calculation ---------------------------------------------------
 # If any MME NA look for conversion errors in med_list.csv
 # If any MME == 0 look for conversion errors purch
 purch_full %>%
@@ -77,9 +80,9 @@ zero_pres <- drugs_pres %>%
   group_by(id = patient_id, RE_med, RE_date) %>%
   slice_min(diff_days, n=1)
 
-
 purch_full <- purch_full %>%
-  left_join(zero_pres %>% select(id,RE_med,RE_date, RE_quantity_pres = prescribed_quantity), by = c("id", "RE_med", "RE_date"))
+  left_join(zero_pres %>% select(id,RE_med,RE_date, RE_quantity_pres = prescribed_quantity), 
+            by = c("id", "RE_med", "RE_date"))
 
 # correct zero error by finding duplicates and taking the right value
 purch_corrected <- purch_full %>%
@@ -108,7 +111,7 @@ purch_refine <- purch_corrected %>%
             RE_date = start_date + months(time)) %>%
   ungroup()
 
-### exclude years & drugs ####
+### exclude years & drugs -----------------------------------------------------
 exclusion_year <- 2012
 exclusion_drugs <- c("Methadone","Pethidine", "Propoxyphene")
 
@@ -119,7 +122,7 @@ purch_refine %>%
   pull(id) %>%
   unique() -> include_id
 
-## Import & clean cohort data ####
+## Import & clean cohort data --------------------------------------------------
 first_purch <- import_data("FIRST_OPIOID_POP_PURCHASE_updated.csv", "purch") %>%
   left_join(membership_dates %>% select(-RE_date), by = "id") %>%
   filter(id %in% include_id,              # exclude patients before 2012
@@ -127,10 +130,11 @@ first_purch <- import_data("FIRST_OPIOID_POP_PURCHASE_updated.csv", "purch") %>%
          days_from_start > 365,           # make sure 1 year of followup before
          days_from_end < -60,             # make sure two month followup after
          med_first_date >= "2003-01-01") %>%
-  select("id", "birth_date", "RE_age", "gender", "SES",  "district", "sector", "bmi",
-         "RE_date", "generic", "generic_codacamol","mme", "RE_pres_sub_dist", "RE_pres_dist", "member_end")
+  select("id", "birth_date", "RE_age", "gender", "SES",  "district", "sector", 
+         "bmi", "RE_date", "generic", "generic_codacamol","mme", "RE_pres_sub_dist", 
+         "RE_pres_dist", "member_end")
 
-## add death dates ####
+## add death dates ------------------------------------------------------------
 death_dates <- read_csv("DeathDates.csv", show_col_types = FALSE) %>%
   clean_names() %>%
   select(id = patient_id,death_date = death_deceased_date)
@@ -138,7 +142,7 @@ death_dates <- read_csv("DeathDates.csv", show_col_types = FALSE) %>%
 first_purch <- first_purch %>%
   left_join(death_dates, by = "id")
 
-## Create outcome ####
+## Create outcome data ---------------------------------------------------------
 purch <- purch_refine %>%
   left_join(membership_dates %>% select(id,member_start,member_end), by = "id") %>%
   filter(id %in% first_purch$id,
@@ -149,9 +153,9 @@ purch <- purch_refine %>%
 outcome_data <- purch %>%
   create_outcome()
 
-## create final df ####
-semi_final_cohort <- left_join(first_purch,
-                               outcome_data, by = "id", suffix = c("_coh", "_outcome"))  %>%
+## create final df -------------------------------------------------------------
+semi_final_cohort <- left_join(first_purch, outcome_data, 
+                               by = "id", suffix = c("_coh", "_outcome"))  %>%
   mutate(age_group = factor(case_when(
     RE_age < 6 ~ "Under 6",
     RE_age >= 6 & RE_age < 13 ~ "6-12",
@@ -189,7 +193,7 @@ semi_final_cohort <- semi_final_cohort %>% #remove all with less than 2 months f
 semi_final_cohort %>%
   pull(id) -> cohort_id
 
-# Visits #### 
+# Visits data -----------------------------------------------------------------
 #add doctor visits data
 visits_prof <- visits %>%
   left_join(semi_final_cohort %>%
@@ -222,7 +226,7 @@ semi_visit_cohort <- semi_final_cohort %>%
   left_join(visits_sum, by = "id", suffix = c("_coh", "_visit")) %>%
   left_join(visits_prof, by = "id")
 
-# diagnosis ####
+# diagnosis data --------------------------------------------------------------
 # analysis diagnosis according to PCI
 pci_vars <- c("alcohol_abuse", "anemia", "anxiety", "malignancy", "asthma", "cardiovascular", "chromosomal_anomalies",
               "condact_disorder", "congenital_malformations", "depression", "developmental_delay", "diabetes_melitus",
@@ -320,7 +324,7 @@ semi_visit_diag_cohort <- semi_visit_cohort %>%
   mutate(psychiatric_not_pci = any(anxiety, depression, eating_disorders, psychotic, sleep)) %>%
   ungroup()
 
-# Drugs ####
+# Drugs data ------------------------------------------------------------------
 other_drugs <- c("אורולוגיה", "אורטופדיה", "הרדמה/הנשמה/טיפול נמרץ", "חבישה כללית",
                  "חדר ניתוח", "כירורגיה", "כללי", "לא הוגדר", "נשים ומיילדות", "סכרת",
                  "עיניים", "פיזיוטרפיה", "ציוד רפואי כללי - מתכלה", "ציוד רפואי מתכלה לבדיקות למעבדה",
@@ -370,7 +374,7 @@ drugs_sum <- drugs %>%
 final_cohort <- semi_visit_diag_cohort %>%
   left_join(drugs_sum, by = "id")
 
-# Correct missing data ####
+# Correct missing data --------------------------------------------------------
 # assume all misisng data in those vars = 0 / FALSE
 visits_var <- colnames(visits_prof)[2:ncol(visits_prof)]
 diagnosis_var <- colnames(diagnosis_score)[2:ncol(diagnosis_score)]
@@ -384,7 +388,7 @@ final_cohort <- final_cohort %>%
   mutate_at(all_of(c("primary_prof","psychiatric_not_pci",pci_vars)), 
             function(x) {ifelse(is.na(x), FALSE, x)}) 
 
-# LABELLS ####
+# LABELLS ---------------------------------------------------------------------
 var_label(final_cohort) <- list(
   birth_date = "Birth Date",
   gender = "Sex",
@@ -472,7 +476,7 @@ var_label(final_cohort) <- list(
   drug_sum = "Total drugs purchased"
 )
 
-# saving the data ####
+# saving the data --------------------------------------------------------------
 save(final_cohort, purch, visits_sum, diagnosis,  membership_dates, any_cancer,
      diagnosis_score, drugs_sum, purch_refine, purch_corrected, cohort_id,
      pci_vars, drugs_var, file = file.path("op_data_new.RData"))

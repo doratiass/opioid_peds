@@ -1,4 +1,4 @@
-# packages, defs and funcs ####
+# packages, defs and funcs ----------------------------------------------------
 library(tidyverse)
 library(gtsummary)
 library(tidymodels)
@@ -94,7 +94,7 @@ cal_plot_three <- function(final_fit, train_fit, split = c("train", "test") ,pla
   return(plot)
 }
 
-# Theme ####
+# Theme -----------------------------------------------------------------------
 plot_theme <- theme(
   plot.title = element_text(size = 25, hjust = 0.5),
   axis.title = element_text(size = 17),
@@ -106,9 +106,9 @@ color_pal <- 'Dark2'
 
 line_size <- 1.2
 
-# fig 1 - model assess ####
+# fig 1 - model assess --------------------------------------------------------
 
-## ROC ####
+## ROC ------------------------------------------------------------------------
 roc_plot <- rbind(xgb_roc_1,xgb_roc_2,xgb_roc_3) %>% #
   ggplot(aes(x = 1 - specificity, y = sensitivity, color = model)) +
   geom_abline(
@@ -129,7 +129,7 @@ roc_plot <- rbind(xgb_roc_1,xgb_roc_2,xgb_roc_3) %>% #
 
 roc_plot
 
-## PR ####
+## PR -------------------------------------------------------------------------
 pr_plot <- rbind(xgb_pr_1,xgb_pr_2,xgb_pr_3) %>% #
   filter(!is.infinite(.threshold)) %>%
   ggplot(aes(x = recall, y = precision, color = model)) +
@@ -142,7 +142,7 @@ pr_plot <- rbind(xgb_pr_1,xgb_pr_2,xgb_pr_3) %>% #
   theme(legend.position = "none",
         legend.title = element_blank())
 
-## Calibration ####
+## Calibration ----------------------------------------------------------------
 cal_test <- cal_plot_three(list(final_xgb_fit_1, final_xgb_fit_2, final_xgb_fit_3),
                            list(xgb_train_fit_1,xgb_train_fit_2,xgb_train_fit_3), 
                            split = "test") +
@@ -151,7 +151,7 @@ cal_test <- cal_plot_three(list(final_xgb_fit_1, final_xgb_fit_2, final_xgb_fit_
 
 cal_test
 
-## All ####
+## All together ---------------------------------------------------------------
 sums_plot <- ggarrange(roc_plot,  cal_test, #pr_plot, cal_train,
                        labels = "AUTO",# label.y = 0.96,
                        ncol = 2) #, nrow = 2)
@@ -161,7 +161,7 @@ sums_plot
 ggsave(filename = file.path("graphs","fig1.pdf"), plot = ggplot2::last_plot(), 
        width = 40, height = 20, dpi = 300, units = "cm", bg = "white")
 
-# fig 2 - Decision curve ####
+# fig 2 - Decision curve analysis ---------------------------------------------
 dc_df <- final_xgb_fit_1 %>% augment() %>%
   cal_apply(cal_estimate_logistic(xgb_train_fit_1)) %>%
   mutate(outcome = ifelse(outcome == "Misuser",1,0),
@@ -211,7 +211,7 @@ dc_plot_df %>%
 ggsave(filename = file.path("graphs","fig2.pdf"), plot = ggplot2::last_plot(), 
        width = 25, height = 25, dpi = 300, units = "cm", bg = "white")
 
-# fig 3 - SHAP ####
+# fig 3 - SHAP ----------------------------------------------------------------
 shap_imp_bar_1 <- sv_importance(shap_1, kind = "bar", show_numbers = TRUE, max_display = 10) +
   theme_classic() +
   labs(x = "Mean absolute SHAP value") +
@@ -232,7 +232,7 @@ ggarrange(shap_imp_bar_1,
 ggsave(filename = file.path("graphs","fig3.pdf"), plot = ggplot2::last_plot(), 
        width = 40, height = 20, dpi = 300, units = "cm", bg = "white")
 
-# fig 4 - change in shap ####
+# fig 4 - change in shap ------------------------------------------------------
 shap_rank_1 <- shap_imp_1$data %>%
   group_by(feature) %>%
   summarise(

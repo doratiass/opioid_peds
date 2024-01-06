@@ -16,8 +16,8 @@ load(file.path("Rprojects","op_data.RData"))
 set.seed(45)
 cat("\f")
 
-# Table 1 - Patients Characteristics ####
-## sociodemograph ####
+# Table 1 - Patients Characteristics -------------------------------------------
+## socio-demographics ----------------------------------------------------------
 dem_vars <- c("outcome", "gender", "age_group" ,"SES", "periphery", "sector")
 final_cohort %>%
   mutate(outcome = ifelse(outcome == "Misuser", "Sustained Users", "Non-Sustained Users")) %>%
@@ -37,8 +37,9 @@ final_cohort %>%
   modify_header(estimate = "**SMD**") %>%
   add_p() -> t11
 
-## Medical ####
-diag_var <- c("n_visits","drug_sum","anemia","malignancy", "asthma", "cardiovascular", "diabetes_melitus",
+## Medical History -------------------------------------------------------------
+diag_var <- c("n_visits","drug_sum","anemia","malignancy", "asthma", 
+              "cardiovascular", "diabetes_melitus",
               "epilepsy", "GI","pain","smoking", "psychiatric_not_pci")
 
 final_cohort %>% 
@@ -56,14 +57,14 @@ final_cohort %>%
                 estimate = "**SMD**") %>%
   add_p()  -> t12
 
-## all ####
+## Table 1 joint --------------------------------------------------------------- 
 (t1 <- tbl_stack(list(t11,t12), 
                  group_header = c("Sociodemographic Characteristics", "Medical History")))
 
 gt::gtsave(as_gt(t1), file = file.path("Opioid - descriptive","tables","t1.html"))
 
-# Table 2. Healthcare Usage ####
-## Visits ####
+# Table 2. Healthcare Usage and Treatment Metrics ------------------------------
+## Visits and drugs ------------------------------------------------------------
 t2_vars <- c("outcome", "n_visits", "clinic_sector_general_num", "proffesion_proffesional", "drug_sum")
 final_cohort %>%
   mutate(outcome = ifelse(outcome == "Misuser", "Sustained Users", "Non-Sustained Users")) %>%
@@ -82,7 +83,7 @@ final_cohort %>%
 t2
 gt::gtsave(as_gt(t2), file = file.path("Rprojects","Opioid - descriptive","tables","t3.html"))
 
-#  Treatment metrics ####
+#  Treatment metrics -----------------------------------------------------------
 purch_vars <- c("outcome", "n_purch", "n_drugs", "generic", "follow_up", "med_purch_int", "med_months_from_first", 
                 "dist_num", "sub_dist_num", "quan", "mme_per_pres", "mme_per_day", "total_mme",
                 "time_to_outcome")
@@ -119,7 +120,7 @@ final_cohort %>%
 t2
 gt::gtsave(as_gt(t2), file = file.path("Rprojects","Opioid - descriptive","tables","t2.html"))
 
-#Diagnosises ####
+#Diagnoses ---------------------------------------------------------------------
 pci_vars <- c("alcohol_abuse", "anemia", "anxiety", "malignancy", "asthma", "cardiovascular", "chromosomal_anomalies",
               "condact_disorder", "congenital_malformations", "depression", "developmental_delay", "diabetes_melitus",
               "drug_abuse", "eating_disorders", "epilepsy", "GI", "joints", "menstrual", "nausa_vomit", "pain", 

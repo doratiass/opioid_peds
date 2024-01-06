@@ -14,7 +14,7 @@ source(file.path("funcs.R"), encoding = "utf8")
 set.seed(45)
 cat("\f")
 
-# Theme ####
+# Create graphs setting -------------------------------------------------------
 plot_theme <- theme(
   plot.title = element_text(size = 25, hjust = 0.5),
   axis.title = element_text(size = 17),
@@ -28,8 +28,8 @@ one_color <- "skyblue3"
 
 clalit_num <- read_csv("clalit_num.csv", show_col_types = FALSE)
 
-# Fig2 ####
-## Purchase per 100,000 ####
+# Fig2 -------------------------------------------------------------------------
+## Purchase per 100,000 -------------------------------------------------------
 max_y <- 1700
 purch_refine %>%
   filter(!(generic %in% exclusion_drugs[!exclusion_drugs %in% "Propoxyphene"])) %>%
@@ -78,7 +78,7 @@ f21 +
   annotation_custom(ggplotGrob(zoomed_f21), 
                     xmin = 2013, xmax = 2021, ymin = 700, ymax = 1800)
 
-## MME per capita ####
+## MME per capita --------------------------------------------------------------
 max_y_mme <- 0.5
 purch_refine %>%
   filter(!(generic %in% exclusion_drugs[!exclusion_drugs %in% "Propoxyphene"])) %>%
@@ -122,7 +122,7 @@ ggarrange(f21 + rremove("x.axis") +
 ggsave(filename = file.path("Opioid - descriptive","graphs","fig2.pdf"), plot = ggplot2::last_plot(), 
        width = 30, height = 20, dpi = 300, units = "cm", bg = "white")
 
-# Fig3 ####
+# Fig3 -------------------------------------------------------------------------
 misuser_prev <- final_cohort%>%
   select(RE_age, RE_date, time, outcome) %>%
   rowwise() %>%
@@ -142,7 +142,8 @@ pp %>%
   geom_point(aes(y = p*fact), color = "chocolate1", size = 3) +
   geom_line(aes(y = p*fact, group = 1), linewidth = 0.5) +
   scale_y_continuous(
-    sec.axis = sec_axis(~./fact, name="Percentage of new sustained users of overall opioid users <19 years old")
+    sec.axis = sec_axis(~./fact, 
+                        name="Percentage of new sustained users of overall opioid users <19 years old")
   ) + 
   labs(
     title = NULL,
@@ -154,17 +155,20 @@ pp %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         axis.title = element_text(size = 14))
 
-ggsave(filename = file.path("Opioid - descriptive","graphs","fig3.pdf"), plot = ggplot2::last_plot(), 
+ggsave(filename = file.path("Opioid - descriptive","graphs","fig3.pdf"), 
+       plot = ggplot2::last_plot(), 
        width = 30, height = 20, dpi = 300, units = "cm", bg = "white")
 
-# Fig4 ####
+# Fig4 -------------------------------------------------------------------------
+## fig 4 - A -------------------------------------------------------------------
 purch_refine %>%
   filter(id %in% cohort_id,
          !(generic %in% exclusion_drugs)) %>%
   mutate(generic = factor(case_when(generic == "Codeine - CodAcamol" ~ "Codeine",
                                     generic == "Codeine - Rokacet" ~ "Codeine",
                                     TRUE ~ as.character(generic)),
-                          levels = c("Codeine","Tramadol","Oxycodone",  "Buprenorphine", "Fentanyl", "Morphine")),
+                          levels = c("Codeine","Tramadol","Oxycodone",  
+                                     "Buprenorphine", "Fentanyl", "Morphine")),
          year = year(RE_date)) %>%
   filter(year < 2022) %>%
   group_by(generic, year) %>%
@@ -185,6 +189,7 @@ purch_refine %>%
         axis.text = element_text(size = 12),
         legend.text = element_text(size = 12)) -> f31
 
+## fig 4 - B -------------------------------------------------------------------
 purch_corrected %>%
   group_by(id, start_date,RE_date,generic, factor) %>%
   summarise(mme = sum(mme)) %>%
@@ -220,6 +225,7 @@ f32_data %>%
         axis.text = element_text(size = 12),
         legend.text = element_text(size = 12)) -> f32
 
+## fig 4 - C -------------------------------------------------------------------
 purch_refine %>%
   left_join(any_cancer, by = "id") %>%
   mutate(cancer = factor(ifelse(cancer, "Cancer", "Non-Cancer"),
@@ -245,6 +251,7 @@ purch_refine %>%
         axis.text = element_text(size = 12),
         legend.text = element_text(size = 12)) -> f33
 
+## fig 4 - D -------------------------------------------------------------------
 purch_refine %>%
   filter(id %in% final_cohort$id) %>%
   left_join(final_cohort %>% select(id, periphery), by = "id") %>%
@@ -269,6 +276,7 @@ purch_refine %>%
         axis.text = element_text(size = 12),
         legend.text = element_text(size = 12)) -> f34
 
+## fig 4 - complete ------------------------------------------------------------
 f3 <- ggarrange(f32, f31, f33, f34,
                 align = "hv",
                 labels = c("A", "B", "C", "D"))
@@ -280,7 +288,7 @@ annotate_figure(f3, left = textGrob("Total MME / 100,000                        
 ggsave(filename = file.path("Opioid - descriptive","graphs","fig4.pdf"), plot = ggplot2::last_plot(), 
        width = 30, height = 20, dpi = 300, units = "cm", bg = "white")
 
-# Fig2s ####
+# Fig2s - MME per capita -------------------------------------------------------
 purch_corrected %>%
   filter(generic == "Fentanyl") %>%
   mutate(drug = case_when(

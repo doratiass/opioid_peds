@@ -20,7 +20,7 @@ load("op_data.RData")
 set.seed(45)
 cat("\f")
 
-# prepare data for survival analysis ####
+# prepare data for survival analysis -------------------------------------------
 surv <- final_cohort %>%
   filter(!(generic %in% c("Methadone","Pethidine", "Propoxyphene"))) %>%
   mutate(year = factor(year(RE_date)),
@@ -40,8 +40,9 @@ surv <- final_cohort %>%
   ) %>%
   select(id, age_group, year, covid, gender, SES, sector, periphery,
          generic, outcome, time, n_visits, drug_sum, 
-         alcohol_abuse,anemia,anxiety,malignancy,asthma,cardiovascular,chromosomal_anomalies,
-         condact_disorder,congenital_malformations, depression,developmental_delay,diabetes_melitus,
+         alcohol_abuse,anemia,anxiety,malignancy,asthma,cardiovascular,
+         chromosomal_anomalies, condact_disorder,congenital_malformations, 
+         depression,developmental_delay,diabetes_melitus,
          drug_abuse,eating_disorders,epilepsy,GI,joints,menstrual,nausa_vomit,
          pain,psychotic,sleep,smoking,weight_loss,pci) %>%
   mutate(n_visits = ifelse(is.na(n_visits),FALSE,n_visits > 12),
@@ -49,7 +50,7 @@ surv <- final_cohort %>%
 
 surv_id <- surv %>% pull(id)
 
-## impute missing data ####
+## impute missing data ---------------------------------------------------------
 imp_data <- surv %>% 
   mutate_if(is.logical, function(x) {ifelse(is.na(x), FALSE, x)}) %>%
   mutate_if(is.logical, function(x) {ifelse(x, 1, 0)})
@@ -61,7 +62,7 @@ surv_imputed <- surv_imputed %>%
   mutate(time = ifelse(outcome == "Misuser", time + 1, time),
          outcome = ifelse(outcome == "Misuser", 1, 0))
 
-# Kaplan Meier Analysis ####
+# Kaplan Meier Analysis --------------------------------------------------------
 km <- survfit(Surv(time, outcome) ~ generic, 
               data = surv_imputed %>%
                 mutate(time = ifelse(time>120, 120, time))%>% 
@@ -101,7 +102,7 @@ f5
 ggsave(filename = file.path("fig5.pdf"), plot = print(f5), 
        width = 30, height = 20, dpi = 300, units = "cm", bg = "white")
 
-# Cox Model ####
+# Cox Model --------------------------------------------------------------------
 cox <- coxph(Surv(time, outcome) ~ ., data = surv_imputed %>% select(-id))
 summary(cox)
 AIC(cox)
@@ -112,8 +113,8 @@ print(ggcoxzph(cz), newpage = TRUE)
 
 tbl_regression(cox, exp=TRUE)
 
-# COX - Time varying covariate ####
-## create df of all opioid use dates  ####
+# COX - Time varying covariate -------------------------------------------------
+## create df of all opioid use dates -------------------------------------------
 purch_surv <- purch %>%
   filter(id %in% surv_imputed$id) %>%
   left_join(surv_imputed %>% select(id,f_time=time), by = "id") %>%
@@ -133,11 +134,11 @@ purch_surv <- purch %>%
   summarise(generic = generic[which(mme == max(mme))]) %>%
   ungroup()
 
-## add "no use" time ####
+## add "no use" time points ----------------------------------------------------
 new_times <- no_use(purch_surv) %>%
   mutate(time = as.numeric(time))
 
-## create cancer dates df  ####
+## create cancer dates df ------------------------------------------------------
 surv_cancer <- diagnosis %>%
   filter(id %in% surv_imputed$id) %>%
   left_join(membership_dates %>% select(id,member_start,member_end), by = "id") %>%
@@ -159,7 +160,7 @@ surv_cancer <- diagnosis %>%
   pivot_longer(cols = c("time_1", "time_0"), names_to = "malignancy", values_to = "time",values_drop_na = TRUE) %>%
   mutate(malignancy = ifelse(malignancy == "time_1", 1,0))
 
-## create COVID df ####
+## create COVID df -------------------------------------------------------------
 final_cohort %>%
   filter(id %in% surv_imputed$id) %>%
   select(id, RE_date) %>%
@@ -174,7 +175,7 @@ final_cohort %>%
          time = ifelse(is.na(time) | time < 0, 0, time)) %>%
   select(id, covid, time)-> covid_time
 
-## merge all data to cox tv analysis ####
+## merge all data to cox tv analysis -------------------------------------------
 surv_drugs_time <- tmerge(data1 = surv_imputed %>% 
                             mutate(outcome = ifelse(outcome == "Misuser", 1, 0),
                                    SES = factor(SES, ordered = FALSE, levels = c("Low", "Medium", "High"))),
@@ -198,7 +199,7 @@ surv_drugs_time <- tmerge(data1 = surv_drugs_time,
                           data2 = covid_time,
                           id = id,
                           covid_time = tdc(time, covid))
-## cox TV analysis ####
+## cox TV analysis -------------------------------------------------------------
 cox_time <- coxph(Surv(tstart,tstop, outcome) ~ ., 
                   data = surv_drugs_time %>% 
                     select(-c(id, time, covid,malignancy)) %>%
@@ -241,7 +242,7 @@ tbl_regression(cox_time, exp=TRUE,
 
 gt::gtsave(as_gt(cox_tbl), file = file.path("Opioid - descriptive","tables","surv.html"))
 
-## Sensitivity analysis ####
+## Sensitivity analysis --------------------------------------------------------
 cox_no_cancer <- coxph(Surv(tstart,tstop, outcome) ~  ., 
                        data = surv_drugs_time %>% 
                          filter(!(id %in% any_cancer$id[any_cancer$cancer])) %>%

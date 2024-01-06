@@ -2,15 +2,15 @@
 Diagnoses (n),36,36,35
 Oxycodone ,35,24,28
 Images (n),34,34,36
-Antineoplastic drugs (n),33,35,33
+Antineoplastic medications (n),33,35,33
 Laboratory tests (n),32,33,34
-Nervous system drugs (n),31,21,26
+Nervous system medications (n),31,21,26
 Age at first purchase,30,31,23
 Tramadol,29,23,13
 Doctor visits (n),28,28,32
-Musculoskeletal drugs (n),27,30,27
+Non-opioid pain medications (n),27,30,27
 PCI,26,27,29
-Total drugs (n),25,32,30
+Total medications (n),25,32,30
 BMI,24,29,25
 prof_primary,23,22,22
 SES_1,22,20,17

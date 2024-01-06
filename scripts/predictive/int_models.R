@@ -16,9 +16,9 @@ load("op_models_raw_data_new.RData")
 set.seed(45)
 cat("\f")
 
-# additional data ####
+# Add additional data to the cohort --------------------------------------------
 
-## labs ####
+## labs ------------------------------------------------------------------------
 hem <- read_csv("Rprojects/hematology.csv",show_col_types = FALSE) %>%
   janitor::clean_names()  %>%
   left_join(final_cohort %>% select(id, RE_date), by = c("patient_id" = "id")) %>%
@@ -30,7 +30,7 @@ hem <- read_csv("Rprojects/hematology.csv",show_col_types = FALSE) %>%
                                                   "HCT/HGB RATIO","RETICUL. COUNT abs",
                                                   "RETICULOCYTES COUNT%","MONOCYTES%")))
 
-chem <- read_csv("Rprojects/cohort_lab_results_Opioid_Aviv_Cohort_360.csv",
+chem <- read_csv("Rprojects/cohort_lab_results.csv",
                     show_col_types = FALSE) %>%
   left_join(final_cohort %>% select(id, RE_date), by = c("patient_id" = "id")) %>%
   mutate(diff = difftime(RE_date, result_date, units = "days")) %>%
@@ -67,7 +67,7 @@ lab_txt <- add_lab %>%
     names_prefix = "lab_txt_"
   )
 
-## images ####
+## images ----------------------------------------------------------------------
 
 ### clean daat ####
 general_service <- c(
@@ -87,7 +87,7 @@ general_service <- c(
   "CT/CTA ארתרוגרפ/CT אורוגר ללא CTA בית החזה לנבדק"
 )
 
-add_img_all <- read_csv("Rprojects/cohort_imaging_Opioid_Aviv_Cohort_360.csv",
+add_img_all <- read_csv("Rprojects/cohort_imaging.csv",
                         show_col_types = FALSE) %>%
   mutate(imaging_type_code = case_when(
     (imaging_type_code == "לא ידוע" | imaging_type_code == "0") & grepl("MRA",service) ~ "MRA",
@@ -148,7 +148,7 @@ add_img_all <- read_csv("Rprojects/cohort_imaging_Opioid_Aviv_Cohort_360.csv",
     TRUE ~ body_part
   ))
 
-### summarize data ####
+### summarize data  -----------------------------------------------------------
 new_body_part <- add_img_all %>%
   filter(body_part != "NO DATA") %>%
   filter(!(service %in% general_service)) %>%
@@ -190,7 +190,7 @@ img_body_num <- add_img %>%
               names_prefix = "img_body_") %>%
   janitor::clean_names()
 
-add_bmi <- read_csv("Rprojects/cohort_measurements_bmi_w_h_Opioid_Aviv_Cohort_360.csv",
+add_bmi <- read_csv("Rprojects/cohort_measurements_bmi.csv",
                     show_col_types = FALSE) %>%
   left_join(final_cohort %>% select(id, RE_date), by = c("patient_id" = "id")) %>%
   mutate(diff = difftime(RE_date, measurement_date, units = "days"),
@@ -202,10 +202,10 @@ add_bmi <- read_csv("Rprojects/cohort_measurements_bmi_w_h_Opioid_Aviv_Cohort_36
   filter(diff == min(diff)) %>%
   distinct(id, bmi)
 
-# Model Data ####
+# Model Data ------------------------------------------------------------------
 gen_collapse <- c("Buprenorphine", "Morphine", "Fentanyl")
 
-## 1 year FO ####
+## 1 year FO ------------------------------------------------------------------
 model_data_1 <- final_cohort %>%
   mutate(time = case_when(
     outcome == "Misuser" & time <= 12 ~ 12,
@@ -253,8 +253,7 @@ model_data_1 <- final_cohort %>%
     district = relevel(factor(district), ref = "Center")
   )
 
-
-## 2 year FO ####
+## 2 year FO ------------------------------------------------------------------
 model_data_2 <- final_cohort %>%
   mutate(time = case_when(
     outcome == "Misuser" & time <= 24 ~ 24,
@@ -302,7 +301,7 @@ model_data_2 <- final_cohort %>%
     district = relevel(factor(district), ref = "Center")
   )
 
-## 3 year FO ####
+## 3 year FO ------------------------------------------------------------------
 model_data_3 <- final_cohort %>%
   mutate(time = case_when(
     outcome == "Misuser" & time <= 36 ~ 36,
@@ -350,5 +349,5 @@ model_data_3 <- final_cohort %>%
     district = relevel(factor(district), ref = "Center")
   )
 
-# save ####
+# save -----------------------------------------------------------------------
 save(model_data_1, model_data_2, model_data_3, file = file.path("Rprojects","op_models_data_3.RData"))
