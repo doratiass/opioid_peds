@@ -18,7 +18,7 @@ This research is structured into two key components:
 
 ## **Publications**
 
-1. Tuttnauer, Aviva; Atias, Dorb; Reznik, Orlyb,c; Shomron, Noamd; Obolski, Urib,e,*. Opioid trends and risk factors for sustained use among children and adolescents in Israel: a retrospective cohort study. PAIN ():10.1097/j.pain.0000000000003153, January 9, 2024. | DOI: 10.1097/j.pain.0000000000003153 [link](https://journals.lww.com/pain/abstract/9900/opioid_trends_and_risk_factors_for_sustained_use.491.aspx).
+1. Tuttnauer, Aviv; Atias, Dor; Reznik, Orly; Shomron, Noam; Obolski, Uri. Opioid trends and risk factors for sustained use among children and adolescents in Israel: a retrospective cohort study. PAIN ():10.1097/j.pain.0000000000003153, January 9, 2024. | DOI: 10.1097/j.pain.0000000000003153 [link](https://journals.lww.com/pain/abstract/9900/opioid_trends_and_risk_factors_for_sustained_use.491.aspx).
  
 
 ## **Code Repository**
