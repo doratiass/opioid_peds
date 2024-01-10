@@ -16,6 +16,11 @@ This research is structured into two key components:
 
     1.  Develop a predictive model to calculate the risk of sustained opioid use.
 
+## **Publications**
+
+1. Tuttnauer, Aviva; Atias, Dorb; Reznik, Orlyb,c; Shomron, Noamd; Obolski, Urib,e,*. Opioid trends and risk factors for sustained use among children and adolescents in Israel: a retrospective cohort study. PAIN ():10.1097/j.pain.0000000000003153, January 9, 2024. | DOI: 10.1097/j.pain.0000000000003153 [link](https://journals.lww.com/pain/abstract/9900/opioid_trends_and_risk_factors_for_sustained_use.491.aspx).
+ 
+
 ## **Code Repository**
 
 The entire codebase for this study is accessible in the main branch under the **`/scripts/descriptive`** and **`/scripts/predictive`** directories. Due to privacy considerations, the dataset used for this research cannot be shared.
