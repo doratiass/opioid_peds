@@ -2,6 +2,7 @@
 library(tidyverse)
 library(gtsummary)
 library(tidymodels)
+library(modelr)
 library(RColorBrewer)
 library(probably)
 library(ggpubr)
@@ -17,33 +18,49 @@ set.seed(45)
 cat("\f")
 
 cal_plot_three <- function(final_fit, train_fit, split = c("train", "test") ,plat = FALSE) {
+  scam_cal_1 <- scam(outcome ~ s(.pred_Misuser,bs = "mpi", m = 2),
+                     data = train_fit[[1]] %>% 
+                       collect_predictions() %>%
+                       mutate(outcome = as.numeric(outcome == "Misuser")),
+                     Family = binomial)
+  scam_cal_2 <- scam(outcome ~ s(.pred_Misuser,bs = "mpi", m = 2),
+                     data = train_fit[[2]] %>% 
+                       collect_predictions() %>%
+                       mutate(outcome = as.numeric(outcome == "Misuser")),
+                     Family = binomial)
+  scam_cal_3 <- scam(outcome ~ s(.pred_Misuser,bs = "mpi", m = 2),
+                     data = train_fit[[3]] %>% 
+                       collect_predictions() %>%
+                       mutate(outcome = as.numeric(outcome == "Misuser")),
+                     Family = binomial)
+  
   if (split == "train") {
     df <- bind_rows(
       train_fit[[1]] %>%
         collect_predictions() %>%
-        cal_apply(cal_estimate_logistic(train_fit[[1]])) %>% 
+        add_predictions(scam_cal_1, type = "response") %>%
         mutate(model = "Model 1"),
       train_fit[[2]] %>%
         collect_predictions() %>%
-        cal_apply(cal_estimate_logistic(train_fit[[2]])) %>% 
+        add_predictions(scam_cal_2, type = "response") %>%
         mutate(model = "Model 2"),
       train_fit[[3]] %>%
         collect_predictions() %>%
-        cal_apply(cal_estimate_logistic(train_fit[[3]])) %>% 
+        add_predictions(scam_cal_3, type = "response") %>%
         mutate(model = "Model 3"))
   } else if (split == "test") {
     df <- bind_rows(
       final_fit[[1]] %>%
         collect_predictions() %>%
-        cal_apply(cal_estimate_logistic(train_fit[[1]])) %>% 
+        add_predictions(scam_cal_1, type = "response") %>%
         mutate(model = "Model 1"),
       final_fit[[2]] %>%
         collect_predictions() %>%
-        cal_apply(cal_estimate_logistic(train_fit[[2]])) %>% 
+        add_predictions(scam_cal_2, type = "response") %>%
         mutate(model = "Model 2"),
       final_fit[[3]] %>%
         collect_predictions() %>%
-        cal_apply(cal_estimate_logistic(train_fit[[3]])) %>% 
+        add_predictions(scam_cal_3, type = "response") %>%
         mutate(model = "Model 3"))
   }
   
@@ -64,9 +81,9 @@ cal_plot_three <- function(final_fit, train_fit, split = c("train", "test") ,pla
   plot_txt <- df %>%
     mutate(outcome = as.numeric(outcome == "Misuser")) %>%
     group_by(model) %>%
-    summarise(int = coef_int(outcome,`.pred_Misuser`),
-              slope = coef_slope(outcome,`.pred_Misuser`)) %>%
-    mutate(txt = paste0(model,", int: ", int,", slope ", slope),
+    summarise(int = coef_int(outcome,pred),
+              slope = coef_slope(outcome,pred)) %>%
+    mutate(txt = paste0(model,", int: ", sprintf(int,fmt='%#.2f'),", slope ", sprintf(slope,fmt='%#.2f')),
            inx = c(1,2,3))
   
   title <- ifelse(plat,
@@ -75,7 +92,7 @@ cal_plot_three <- function(final_fit, train_fit, split = c("train", "test") ,pla
   
   df %>%
     mutate(outcome = as.numeric(outcome == "Misuser")) %>%
-    ggplot(aes(.pred_Misuser, outcome, color = model)) +
+    ggplot(aes(pred, outcome, color = model)) +
     geom_rug(aes(group=model),sides = "tb",alpha = 0.2) + #, color = "grey"
     geom_smooth(linewidth = line_size, method = "loess", se = TRUE, fullrange = TRUE) +
     geom_abline(intercept = 0, slope = 1, linetype = "longdash") +
@@ -94,6 +111,57 @@ cal_plot_three <- function(final_fit, train_fit, split = c("train", "test") ,pla
   return(plot)
 }
 
+label_get <- function(x) {ifelse(x %in% vars_dict$var,
+                                 vars_dict[vars_dict$var == x,"name",drop = TRUE],x)}
+vars_label <- function(x) {sapply(str_split_i(x, " =", 1), 
+                                  label_get, USE.NAMES = FALSE)}
+var_get <- function(x) {ifelse(x %in% vars_dict$name,
+                               vars_dict[vars_dict$name == x,"var",drop = TRUE],x)}
+
+# create dictionary data -------------------------------------------------------
+vars_dict <- tibble(
+  "RE_age" = "Age at Admission (years)",
+  "gender_Male" = "Sex - Male",
+  "bmi" = "BMI (kg/m2)",
+  "n_visits" = "Doctor visits (n)",
+  "diff_profession" = "Different professions visited  (n)",
+  "proffesion_primary" = "Perimary doctor visits (%)",
+  "n_diagnosis" = "Diagnoses (n)",
+  "pci" = "PCI",
+  "sum_drug" = "Total drugs purchased",
+  "drug_nervous" = "Nervous system drugs (n)",
+  "drug_muscle" = "Non-opioid pain medications (n)",
+  "drug_antineoplastic" = "Antineoplastic drugs (n)",
+  "lab_n" = "Lab tests (n)",
+  "img_n" = "Imaging tests (n)",
+  "malignancy_TRUE." = "Malignancy",
+  "pain_TRUE." = "Pain",
+  "psychiatric_not_pci_TRUE." = "Any psychiatric condition",
+  "SES_1" = "Socioeconomic status",
+  "SES_2" = "Socioeconomic status",
+  "SES_3" = "Socioeconomic status",
+  "SES_4" = "Socioeconomic status",
+  "sector_Arab...others" = "Sector - Arab",
+  "sector_Bedouin" = "Sector - Bedouin",
+  "sector_Cherkess" = "Sector - Cherkess",
+  "sector_Religious.mixed" = "Sector - Religious Jewish",
+  "district_Dan.PT" = "District - Dan-PT",
+  "district_Eilat" = "District - Eilat",
+  "district_Haifa" = "District - Haifa",
+  "district_Jerusalem" = "District - Jerusalem",
+  "district_North" = "District - North",
+  "district_Sharon.Shomron" = "District - Sharon-Shomron",
+  "district_South" = "District - South",
+  "district_Tel.Aviv.Jaffa" = "District - Tel-Aviv",
+  "generic_Other" = "Generic - Other",
+  "generic_Oxycodone" = "Generic - Oxycodone",
+  "generic_Tramadol" = "Generic - Tramadol"
+) %>% 
+  pivot_longer(
+    cols = 1:ncol(.),
+    names_to = "var",
+    values_to = "name"
+  )
 # Theme -----------------------------------------------------------------------
 plot_theme <- theme(
   plot.title = element_text(size = 25, hjust = 0.5),
@@ -120,6 +188,8 @@ roc_plot <- rbind(xgb_roc_1,xgb_roc_2,xgb_roc_3) %>% #
   geom_point(aes(x = 0.5, y = 0.2-0.05*inx), shape = 15, size = 3) +
   geom_text(aes(x = 0.55, y = 0.2-0.05*inx, label = model, size = 15),
             color = "black", hjust = 0, check_overlap = T) +
+  labs(x = "1 - Specificity",
+       y = "Sensitivity") +
   coord_equal() +
   theme_bw() +
   plot_theme +
@@ -154,6 +224,7 @@ cal_test
 ## All together ---------------------------------------------------------------
 sums_plot <- ggarrange(roc_plot,  cal_test, #pr_plot, cal_train,
                        labels = "AUTO",# label.y = 0.96,
+                       font.label = list(size = 20, color = "black", face = "bold"),
                        ncol = 2) #, nrow = 2)
 
 sums_plot
@@ -163,16 +234,16 @@ ggsave(filename = file.path("graphs","fig1.pdf"), plot = ggplot2::last_plot(),
 
 # fig 2 - Decision curve analysis ---------------------------------------------
 dc_df <- final_xgb_fit_1 %>% augment() %>%
-  cal_apply(cal_estimate_logistic(xgb_train_fit_1)) %>%
-  mutate(outcome = ifelse(outcome == "Misuser",1,0),
+  mutate(cal_pred = predict.scam(scal_cal, ., type = "response"),
+         outcome = ifelse(outcome == "Misuser",1,0),
          oxy = ifelse(generic == "Oxycodone",1,0))
 
-dcurves::dca(outcome ~ .pred_Misuser + oxy, data = dc_df, 
+dcurves::dca(outcome ~ cal_pred + oxy, data = dc_df, 
              as_probability = c("oxy")) %>%
   standardized_net_benefit() %>%
   as_tibble() %>%
   mutate(label = factor(case_when(
-    label == ".pred_Misuser" ~ "Model",
+    label == "cal_pred" ~ "Model",
     label == "oxy" ~ "Oxycodone users", 
     label == "Treat All" ~ "Assume everyone is a sustained user",
     label == "Treat None" ~ "Assume no one is a sustained user",
@@ -215,10 +286,12 @@ ggsave(filename = file.path("graphs","fig2.pdf"), plot = ggplot2::last_plot(),
 shap_imp_bar_1 <- sv_importance(shap_1, kind = "bar", show_numbers = TRUE, max_display = 10) +
   theme_classic() +
   labs(x = "Mean absolute SHAP value") +
+  scale_y_discrete(labels = vars_label) +
   plot_theme
 
 shap_imp_bee_1 <- sv_importance(shap_1, kind = "beeswarm", show_numbers = FALSE, max_display = 10) +
   theme_classic() +
+  scale_y_discrete(labels = vars_label) +
   plot_theme
 
 ggarrange(shap_imp_bar_1, 
@@ -240,7 +313,8 @@ shap_rank_1 <- shap_imp_1$data %>%
     year = 1
   ) %>%
   arrange(desc(shap)) %>%
-  mutate(rank_1 = row_number(shap))
+  mutate(rank = row_number(shap),
+         feature = vars_label(feature))
 
 shap_rank_2 <- shap_imp_2$data %>%
   group_by(feature) %>%
@@ -249,7 +323,8 @@ shap_rank_2 <- shap_imp_2$data %>%
     year = 2
   ) %>%
   arrange(desc(shap)) %>%
-  mutate(rank_2 = row_number(shap))
+  mutate(rank = row_number(shap),
+         feature = vars_label(feature))
 
 
 shap_rank_3 <- shap_imp_3$data %>%
@@ -259,18 +334,12 @@ shap_rank_3 <- shap_imp_3$data %>%
     year = 3
   ) %>%
   arrange(desc(shap)) %>%
-  mutate(rank_3 = row_number(shap))
+  mutate(rank = row_number(shap),
+         feature = vars_label(feature))
 
-model_3_shap <- left_join(shap_rank_1 %>% select(var = feature,rank_1),
-                       shap_rank_2 %>% select(var = feature,rank_2), by = "feature") %>%
-  left_join(shap_rank_3 %>% select(var = feature,rank_3), by = "feature") %>%
-  pivot_longer(
-    cols = !var,
-    names_to = "year",
-    values_to = "rank"
-  ) %>%
+model_3_shap <- bind_rows(shap_rank_1, shap_rank_2, shap_rank_3) %>%
+  select(-shap) %>%
   mutate(
-    year = as.numeric(str_remove(year, "rank_")),
     rank = case_when(
       #  is.na(rank) ~ 4,
       rank <= 26 ~ NA,

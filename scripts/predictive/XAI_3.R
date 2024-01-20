@@ -1,138 +1,180 @@
 # packages --------------------------------------------------------------------
 library(tidyverse)
-library(gtsummary)
+library(fastshap)
 library(shapviz)
 library(tidymodels)
-library(pdp)
 library(parallel)
 library(doParallel)
 library(probably)
-library(gridExtra)
+library(scam)
 tidymodels_prefer()
 
 source(file.path("Rprojects","funcs.R"), encoding = "utf8")
 load("models.RData")
-set.seed(45)
+
+pfun <- function(model, newdata, prob = prob_df) {
+  prob_raw <- predict(model, newdata, type = "response")
+  model_prob <- sapply(prob_raw, function(x) {
+    as.numeric(prob[which.min(abs(prob[["model_prob"]] - x)), "cal_prob", drop = T])
+  })
+  return(model_prob)
+}
+
+set.seed(4563)
 cat("\f")
 
 # XGB_1 ------------------------------------------------------------------------
+## Calibration -----------------------------------------------------------------
+scam_cal <- scam(outcome ~ s(.pred_Misuser,bs = "mpi", m = 2),
+                 data = xgb_train_fit_1 %>% 
+                   collect_predictions() %>%
+                   mutate(outcome = as.numeric(outcome == "Misuser")),
+                 Family = binomial)
+df <- tibble(pred_Misuser = seq(0,1,length.out = 100000))
+prob  <- predict.scam(scam_cal, df, type = "response")
+
+prob_df <- df %>%
+  rename(model_prob = .pred.Misuser) %>%
+  mutate(cal_prob = ifelse(model_prob > 0.4,
+                           as.numeric(exp(20.340*model_prob-6.313)/(1+exp(20.340*model_prob-6.313))), 
+                           prob)) %>%
+  tibble()
+
 ## SHAP values -----------------------------------------------------------------
 xgb_prep_1 <- xgb_rec_1 %>%
   prep(strings_as_factors = FALSE,
        log_changes = TRUE,
        verbose = TRUE)
 
-xgb_shap_data_1 <- bake(xgb_prep_1,
-                        has_role("predictor"),
-                        new_data = df_test_1,
-                        composition = "matrix")
+xgb_shap_1 <- bake(xgb_prep_1,
+                   has_role("predictor"),
+                   new_data = df_train_1,
+                   composition = "matrix")
 
-shap_1 <- shapviz(extract_fit_engine(final_xgb_fit_1), X_pred = xgb_shap_data_1)
+xgb_bg_1 <- bake(xgb_prep_1,
+                 has_role("predictor"),
+                 new_data = df_train_1[sample(1:nrow(df_train_1), 5000),],
+                 composition = "matrix")
+
+cl <- makepsockcluster(64)
+registerDoParallel(cl)
+
+shap_1 <- Fastshap::explain(extract_fit_engine(final_xgb_fit_1),
+                            x = shap_bg_1,
+                            pred_wrapper = pfun,
+                            newdata = xgb_shap_1,
+                            nsim = 100,
+                            adjust = TRUE,
+                            shap_only = FALSE,
+                            parallel = TRUE,
+                            .export = c("prob_df"))
+stopcluster (cl)
 
 shap_imp_1 <- sv_importance(shap_1, kind = "both", show_numbers = TRUE, max_display = 36) +
   theme_classic()
 
 shap_imp_1
 
-## PDP -------------------------------------------------------------------------
-deps_1 <- shap_imp_1$data %>%
-  mutate(feature = as.character(feature)) %>%
-  distinct(feature) %>%
-  pull(feature)
-
-dep_plot_list_1 <- lapply(deps_1, pdp::partial, 
-                 object = extract_fit_engine(final_xgb_fit_1), 
-                 train = xgb_shap_data_1)
-
-for (i in 1:length(dep_plot_list_1)) {
-  dep_plot_list_1[[i]][,"feature"] <- colnames(dep_plot_list_1[[i]])[1]
-  names(dep_plot_list_1[[i]])[1] <- "shap"
-}
-
-dep_plot_1 <- bind_rows(dep_plot_list_1)
-
-dep_plot_1 %>%
-  ggplot(aes(shap, yhat)) +
-  geom_path() + 
-  facet_wrap(~feature, scales = "free") +
-  theme_classic()
-
 # XGB_2 ------------------------------------------------------------------------
+## Calibration -----------------------------------------------------------------
+scam_cal <- scam(outcome ~ s(.pred_Misuser,bs = "mpi", m = 2),
+                 data = xgb_train_fit_2 %>% 
+                   collect_predictions() %>%
+                   mutate(outcome = as.numeric(outcome == "Misuser")),
+                 Family = binomial)
+df <- tibble(pred_Misuser = seq(0,1,length.out = 100000))
+prob  <- predict.scam(scam_cal, df, type = "response")
+
+prob_df <- df %>%
+  rename(model_prob = .pred.Misuser) %>%
+  mutate(cal_prob = ifelse(model_prob > 0.4,
+                           as.numeric(exp(20.340*model_prob-6.313)/(1+exp(20.340*model_prob-6.313))), 
+                           prob)) %>%
+  tibble()
+
 ## SHAP values -----------------------------------------------------------------
 xgb_prep_2 <- xgb_rec_2 %>%
   prep(strings_as_factors = FALSE,
        log_changes = TRUE,
        verbose = TRUE)
 
-xgb_shap_data_2 <- bake(xgb_prep_2,
-                        has_role("predictor"),
-                        new_data = df_test_2,
-                        composition = "matrix")
+xgb_shap_2 <- bake(xgb_prep_2,
+                   has_role("predictor"),
+                   new_data = df_train_2,
+                   composition = "matrix")
 
-shap_2 <- shapviz(extract_fit_engine(final_xgb_fit_2), X_pred = xgb_shap_data_2)
+xgb_bg_2 <- bake(xgb_prep_2,
+                 has_role("predictor"),
+                 new_data = df_train_2[sample(1:nrow(df_train_2), 5000),],
+                 composition = "matrix")
+
+cl <- makepsockcluster(64)
+registerDoParallel(cl)
+
+shap_2 <- Fastshap::explain(extract_fit_engine(final_xgb_fit_2),
+                            x = shap_bg_2,
+                            pred_wrapper = pfun,
+                            newdata = xgb_shap_2,
+                            nsim = 100,
+                            adjust = TRUE,
+                            shap_only = FALSE,
+                            parallel = TRUE,
+                            .export = c("prob_df"))
+stopcluster (cl)
 
 shap_imp_2 <- sv_importance(shap_2, kind = "both", show_numbers = TRUE, max_display = 36) +
   theme_classic()
 
-## PDP -------------------------------------------------------------------------
-deps_2 <- shap_imp_2$data %>%
-  mutate(feature = as.character(feature)) %>%
-  distinct(feature) %>%
-  pull(feature)
-
-dep_plot_list_2 <- lapply(deps_2, pdp::partial, 
-                          object = extract_fit_engine(final_xgb_fit_2), 
-                          train = xgb_shap_data_2)
-
-for (i in 1:length(dep_plot_list_2)) {
-  dep_plot_list_2[[i]][,"feature"] <- colnames(dep_plot_list_2[[i]])[1]
-  names(dep_plot_list_2[[i]])[1] <- "shap"
-}
-
-dep_plot_2 <- bind_rows(dep_plot_list_2)
-
-dep_plot_2 %>%
-  ggplot(aes(shap, yhat)) +
-  geom_path() + 
-  facet_wrap(~feature, scales = "free") +
-  theme_classic()
+shap_imp_2
 
 # XGB_3 ------------------------------------------------------------------------
+## Calibration -----------------------------------------------------------------
+scam_cal <- scam(outcome ~ s(.pred_Misuser,bs = "mpi", m = 2),
+                 data = xgb_train_fit_3 %>% 
+                   collect_predictions() %>%
+                   mutate(outcome = as.numeric(outcome == "Misuser")),
+                 Family = binomial)
+df <- tibble(pred_Misuser = seq(0,1,length.out = 100000))
+prob  <- predict.scam(scam_cal, df, type = "response")
+
+prob_df <- df %>%
+  rename(model_prob = .pred.Misuser) %>%
+  mutate(cal_prob = ifelse(model_prob > 0.4,
+                           as.numeric(exp(20.340*model_prob-6.313)/(1+exp(20.340*model_prob-6.313))), 
+                           prob)) %>%
+  tibble()
+
 ## SHAP values -----------------------------------------------------------------
 xgb_prep_3 <- xgb_rec_3 %>%
   prep(strings_as_factors = FALSE,
        log_changes = TRUE,
        verbose = TRUE)
 
-xgb_shap_data_3 <- bake(xgb_prep_3,
-                        has_role("predictor"),
-                        new_data = df_test_3,
-                        composition = "matrix")
+xgb_shap_3 <- bake(xgb_prep_3,
+                   has_role("predictor"),
+                   new_data = df_train_3,
+                   composition = "matrix")
 
-shap_3 <- shapviz(extract_fit_engine(final_xgb_fit_3), X_pred = xgb_shap_data_3)
+xgb_bg_3 <- bake(xgb_prep_3,
+                 has_role("predictor"),
+                 new_data = df_train_3[sample(1:nrow(df_train_3), 5000),],
+                 composition = "matrix")
+
+cl <- makepsockcluster(64)
+registerDoParallel(cl)
+
+shap_3 <- Fastshap::explain(extract_fit_engine(final_xgb_fit_3),
+                            x = shap_bg_3,
+                            pred_wrapper = pfun,
+                            newdata = xgb_shap_3,
+                            nsim = 100,
+                            adjust = TRUE,
+                            shap_only = FALSE,
+                            parallel = TRUE,
+                            .export = c("prob_df"))
+stopcluster (cl)
 
 shap_imp_3 <- sv_importance(shap_3, kind = "both", show_numbers = TRUE, max_display = 36) +
   theme_classic()
 
-## PDP -------------------------------------------------------------------------
-deps_3 <- shap_imp_3$data %>%
-  mutate(feature = as.character(feature)) %>%
-  distinct(feature) %>%
-  pull(feature)
-
-dep_plot_list_3 <- lapply(deps_3, pdp::partial, 
-                          object = extract_fit_engine(final_xgb_fit_3), 
-                          train = xgb_shap_data_3)
-
-for (i in 1:length(dep_plot_list_3)) {
-  dep_plot_list_3[[i]][,"feature"] <- colnames(dep_plot_list_3[[i]])[1]
-  names(dep_plot_list_3[[i]])[1] <- "shap"
-}
-
-dep_plot_3 <- bind_rows(dep_plot_list_3)
-
-dep_plot_3 %>%
-  ggplot(aes(shap, yhat)) +
-  geom_path() + 
-  facet_wrap(~feature, scales = "free") +
-  theme_classic()
+shap_imp_3
