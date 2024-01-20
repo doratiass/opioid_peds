@@ -3,20 +3,9 @@ library(ggbump)
 library(rcartocolor)
 #https://medialab.github.io/iwanthue/
 
-model_3_shap <- read_csv("model_3_shap.csv", show_col_types = FALSE) %>%
-  # pivot_wider(
-  #   id_cols = "var",
-  #   names_from = "year",
-  #   names_glue = "{year}",
-  #   values_from = "rank"
-  # ) %>%
-  pivot_longer(
-    cols = !var,
-    names_to = "year",
-    values_to = "rank"
-  ) %>%
+model_3_shap <- read_csv("shap_rank.csv", show_col_types = FALSE) %>%
+  select(-shap) %>%
   mutate(
-    year = as.numeric(str_remove(year, "rank_")),
     rank = case_when(
       #  is.na(rank) ~ 4,
       rank <= 26 ~ NA,
