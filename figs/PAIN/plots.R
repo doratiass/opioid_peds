@@ -531,21 +531,17 @@ ggsave("cool_or.png", cool_or, width = 33.87, height = 19.05, units = "cm",
        device = png, type = "quartz")
 
 # ooo ####
-img_url <-"/Users/doratias/Documents/statistical analysis/opioid_thesis/pill.avif"
+img_url <-"~/Documents/stat_projects/opioid_peds/pain - confrence/pill.avif"
 line_s <- 1.2
 txt_s <- 12
 
-axs <- tibble(
-  dates = c(1,2,3,4,5,6,7),
-  y = c(1,1,1,1,1,1,1),
-  pres = c(NA,"1st",NA,NA,"2nd","3rd",NA),
-  month = c("01","02","03", "04", "05", "06","07"),
-  img = c(NA,img_url,NA,NA,img_url,img_url,NA),
-  dos = c("1MME", "0.5MME",NA,"1.25MME",NA,"1MME","3MME"),
-  img2 = c(img_url,img_url,NA,img_url,NA,img_url,img_url)
-)
-
-axs %>%
+tibble(
+  dates = c(1:12),
+  y = rep(1,12),
+  pres = c(NA,NA,"1st",NA,NA,"2nd","3rd",NA,NA,NA,NA,NA),
+  month = c("01","02","03", "04", "05", "06","07","08","09","10","11","12"),
+  img = c(NA,NA,img_url,NA,NA,img_url,img_url,NA,NA,NA,NA,NA)
+) %>%
   ggplot(aes(dates)) +
   geom_image(mapping = aes(y = y+0.15,
                            image = img),
@@ -556,12 +552,12 @@ axs %>%
             family = font_g, size = 10) +
   geom_text(aes(y = y-0.1,label = month), 
             family = font_g, size = 8) +
-  geom_segment(aes(x = 1, xend = 7, y = y, yend = y),
-               size = line_s, lineend = "round") +
+  geom_segment(aes(x = 1, xend = 12, y = y, yend = y),
+               linewidth = line_s, lineend = "round") +
   geom_segment(aes(x = dates, xend = dates, y = y-0.05, yend = y+0.05),
-               size = line_s, lineend = "round") +
+               linewidth = line_s, lineend = "round") +
   labs(y = "", x = "") +
-  coord_cartesian(xlim = c(0,8),
+  coord_cartesian(xlim = c(0,13),
                   ylim = c(0.85,1.35)) +
   theme(
     plot.background = element_rect(fill = "white", colour = "white"),
@@ -570,10 +566,17 @@ axs %>%
     axis.text = element_blank()
   ) -> pill_a
 pill_a
-ggsave("pill_a.png", pill_a, width = 30, height = 5, units = "cm",
+ggsave("/Users/doratias/Documents/stat_projects/opioid_peds/pain - confrence/pill_a.png", 
+       pill_a, width = 35, height = 5, units = "cm",
        device = png, type = "quartz")
 
-axs %>%
+tibble(
+  dates = c(1:12),
+  y = rep(1,12),
+  month = c("01","02","03", "04", "05", "06","07","08","09","10","11","12"),
+  dos = c("10-MME",NA,NA,NA,"12.5-MME",NA,NA,NA,"10-MME",NA,NA,"20-MME"),
+  img2 = c(img_url,NA,NA,NA,img_url,NA,NA,NA,img_url,NA,NA,img_url),
+) %>%
   ggplot(aes(dates)) +
   geom_image(mapping = aes(y = y+0.15,
                            image = img2),
@@ -584,12 +587,12 @@ axs %>%
             family = font_g, size = 8) +
   geom_text(aes(y = y-0.1,label = month), 
             family = font_g, size = 8) +
-  geom_segment(aes(x = 1, xend = 7, y = y, yend = y),
+  geom_segment(aes(x = 1, xend = 12, y = y, yend = y),
                size = line_s, lineend = "round") +
   geom_segment(aes(x = dates, xend = dates, y = y-0.05, yend = y+0.05),
                size = line_s, lineend = "round") +
   labs(y = "", x = "") +
-  coord_cartesian(xlim = c(0,8),
+  coord_cartesian(xlim = c(0,13),
                   ylim = c(0.85,1.35)) +
   theme(
     plot.background = element_rect(fill = "white", colour = "white"),
@@ -598,24 +601,25 @@ axs %>%
     axis.text = element_blank()
   ) + 
   annotate(
-    geom = "curve", x = 0.4, y = 1.2, xend = 0.7, yend = 1.3, 
-    curvature = -.3, arrow = arrow(length = unit(2, "mm"))
-  ) +
-  annotate(geom = "text", x = 0.4, y = 1.15, label = "1st", hjust = "center",
-           fontface =2, size = 8, family = font_g) + 
-  annotate(
-    geom = "curve", x = 3.3, y = 1.2, xend = 3.55, yend = 1.3, 
-    curvature = -.3, arrow = arrow(length = unit(2, "mm"))
-  ) +
-  annotate(geom = "text", x = 3.3, y = 1.15, label = "2nd", hjust = "center",
-           fontface =2, size = 8, family = font_g) + 
-  annotate(
-    geom = "curve", x = 7.6, y = 1.2, xend = 7.4, yend = 1.3, 
+    geom = "curve", x = 1.9, y = 1.2, xend = 1.6, yend = 1.3, 
     curvature = .3, arrow = arrow(length = unit(2, "mm"))
   ) +
-  annotate(geom = "text", x = 7.6, y = 1.15, label = "3rd", hjust = "center",
+  annotate(geom = "text", x = 1.9, y = 1.15, label = "1st", hjust = "center",
+           fontface =2, size = 8, family = font_g) + 
+  annotate(
+    geom = "curve", x = 4, y = 1.2, xend = 4.25, yend = 1.3, 
+    curvature = -.3, arrow = arrow(length = unit(2, "mm"))
+  ) +
+  annotate(geom = "text", x = 4, y = 1.15, label = "2nd", hjust = "center",
+           fontface =2, size = 8, family = font_g) + 
+  annotate(
+    geom = "curve", x = 11, y = 1.2, xend = 11.3, yend = 1.3, 
+    curvature = -.3, arrow = arrow(length = unit(2, "mm"))
+  ) +
+  annotate(geom = "text", x = 11, y = 1.15, label = "3rd", hjust = "center",
            fontface =2, size = 8, family = font_g) -> pill_b
 pill_b
-ggsave("pill_b.png", pill_b, width = 30, height = 5, units = "cm",
+ggsave("/Users/doratias/Documents/stat_projects/opioid_peds/pain - confrence/pill_b.png", 
+       pill_b, width = 35, height = 5, units = "cm",
        device = png, type = "quartz")
 
