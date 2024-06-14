@@ -12,13 +12,14 @@ This research is structured into two key components:
 
     2.  Identify risk factors contributing to sustained opioid use.
 
-2.  Predictive Part: Machine Learning-Based Risk Calculator
+2.  Predictive Part: Machine Learning-Based Risk Calculator, recently published on [BJA](https://www.bjanaesthesia.org/article/S0007-0912(24)00267-8/abstract)
 
     1.  Develop a predictive model to calculate the risk of sustained opioid use.
 
 ## **Publications**
 
 1.  Tuttnauer, Aviv; Atias, Dor; Reznik, Orly; Shomron, Noam; Obolski, Uri. Opioid trends and risk factors for sustained use among children and adolescents in Israel: a retrospective cohort study. PAIN ():10.1097/j.pain.0000000000003153, January 9, 2024. \| DOI: 10.1097/j.pain.0000000000003153 [link](https://journals.lww.com/pain/abstract/9900/opioid_trends_and_risk_factors_for_sustained_use.491.aspx).
+2. Atias, Dor, et al. "Prediction of sustained opioid use in children and adolescents using machine learning." British Journal of Anaesthesia (2024).‏ [link](https://www.bjanaesthesia.org/article/S0007-0912(24)00267-8/abstract)
 
 ## **Code Repository**
 
